@@ -44,7 +44,7 @@ def get_country_trending(country_code):
 
 def get_global_top_by_keyword(keyword):
     print(f"\n正在搜尋：【{keyword}】 的全球歷史最高觀看排行")
-    # 這樣可以抓到那些被分類在「娛樂」但觀看數極高的 MV
+    # 這樣可以抓到那些被分類在「娛樂」但觀看數極高的MV
     search_keyword = f"{keyword} MV"
     search_req = youtube.search().list(
         part='id',
@@ -78,10 +78,10 @@ def get_global_top_by_keyword(keyword):
             seen_titles.add(title)     
 
     #總觀看數大排到小
-    #因為搜尋 50 筆回來後，順序可能因 API 權重略有變動，我們自己排最準
+    #因為搜尋50筆回來後，順序可能因API權重略有變動，我們自己排最準
     videos_data = sorted(videos_data, key=lambda x: x['views'], reverse=True)
 
-    #只取前 10 名
+    #只取前10名
     top_10_videos = videos_data[:10]
 
     #印出結果
@@ -97,12 +97,12 @@ def get_global_top_by_keyword(keyword):
     draw_chart(top_10_videos, chart_name)
 
 def draw_chart(top_10_videos, chart_title):
-    #解決matplotlib中文字體顯示亂碼
+    #解決matplotlib中文、韓文等字體顯示亂碼
     plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'Malgun Gothic', 'MS Gothic', 'sans-serif']
     plt.rcParams['axes.unicode_minus'] = False
     warnings.filterwarnings("ignore", category=UserWarning)
 
-    # 因為歌名可能太長會把圖表擠歪，我們這裡畫圖時稍微把歌名截斷 (取前15字)
+    # 因為歌名可能太長會把圖表擠歪，我們這裡畫圖時稍微把歌名截斷(取前15字)
     titles = []
     views = []
     for video in top_10_videos:
@@ -116,13 +116,13 @@ def draw_chart(top_10_videos, chart_title):
     views.reverse()
 
     #開始畫圖
-    plt.figure(figsize=(12, 6)) # 設定畫布大小(寬12, 高6)
+    plt.figure(figsize=(12, 6)) # 設定畫布大小(寬12,高6)
 
     #畫出水平長條圖
     bars = plt.barh(titles, views, color='skyblue') 
 
     #設定圖表的標題與座標軸標籤
-    plt.title(f'📊 {chart_title}', fontsize=16, fontweight='bold', pad=15)
+    plt.title(f'{chart_title}', fontsize=16, fontweight='bold', pad=15)
     plt.xlabel('歷史總觀看次數', fontsize=12)
     plt.ylabel('歌曲名稱', fontsize=12)
 
@@ -136,6 +136,7 @@ def draw_chart(top_10_videos, chart_title):
     #自動調整排版
     plt.tight_layout()
     plt.show()
+
 # 互動式選單介面
 while True:
     print("\n" + "="*40)
