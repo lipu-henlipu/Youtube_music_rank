@@ -42,55 +42,95 @@ def get_country_trending(country_code):
     chart_name = f"{country_code} 當下熱門音樂排行榜"
     draw_chart(top_10_videos, chart_name)
 
-def get_global_top_by_keyword(keyword):
-    print(f"\n正在搜尋：【{keyword}】 的全球歷史最高觀看排行")
-    # 這樣可以抓到那些被分類在「娛樂」但觀看數極高的MV
-    search_keyword = f"{keyword} MV"
-    search_req = youtube.search().list(
-        part='id',
-        q=search_keyword,        
-        type='video',
-        order='viewCount',
-        maxResults=50           #增加到50筆，確保觀看數最高的幾個一定在名單內
-    )
+def get_global_top_by_keyword(keyword, is_artist=False):
+    print(f"\n正在搜尋：【{keyword}】 的全球歷史最高觀看排行...請稍候")
+    if is_artist: #音樂人
+        search_keyword = f'"{keyword}"'
+        search_req = youtube.search().list(
+            part='id',
+            q=search_keyword,        
+            type='video',
+            videoCategoryId='10',
+            order='viewCount',
+            maxResults=50           
+        )
+    else: #曲風
+        search_keyword = f'{keyword} MV'
+        search_req = youtube.search().list(
+            part='id',
+            q=search_keyword,        
+            type='video',
+            videoCategoryId='10', 
+            order='relevance', 
+            maxResults=50           
+        )
+
     search_res = search_req.execute()
     video_ids = [item['id']['videoId'] for item in search_res['items']]
     if not video_ids:
-        print("找不到相關影片，請嘗試其他關鍵字！")
+        print("找不到相關影片")
         return
 
-    #查觀看數
+    # 查觀看數
     id_string = ','.join(video_ids)
     video_req = youtube.videos().list(part='snippet,statistics', id=id_string)
     video_res = video_req.execute() 
 
-    #整理資料
+    # 整理資料
     videos_data = []
-    seen_titles = set() #用來過濾重複或極度相似的影片  
+    seen_titles = set() 
+    
+    #抓捕非音樂影片
+    bad_words = ['介紹', '解析', '盤點', 'cover', 'reaction', 'shorts', 'teaser', '預告', '片段', '翻唱', 'live', '現場', '致敬', '模仿', '串燒', '合集', 'playlist', '全紀錄', 'vlog', '伴奏', '演奏']
 
     for item in video_res['items']:
         title = item['snippet']['title']
+        channel_title = item['snippet']['channelTitle']
         views = int(item['statistics'].get('viewCount', 0))
 
-        # 去掉重複標題的影片，如果標題完全一樣就跳過
-        if title not in seen_titles:
-            videos_data.append({'title': title, 'views': views})
+        # 檢查是否踩到黑名單
+        is_dirty = any(bad.lower() in title.lower() for bad in bad_words)
+        
+        if is_artist:
+            # 條件 1：影片標題「必須」包含歌手的名字
+            in_title = keyword.lower() in title.lower()
+            
+            # 條件 2：是歌手本人的專屬頻道嗎？
+            is_artist_channel = keyword.lower() in channel_title.lower()
+            
+            # 條件 3：是官方唱片公司嗎？(建立官方認證字庫)
+            official_keywords = ['vevo', 'official', '官方', '音樂', 'music', '唱片', 'records', 'entertainment', '工作室', 'studio', 'binmusic', 'rock']
+            is_label_channel = any(ok in channel_title.lower() for ok in official_keywords)
+            
+            # 只要標題有名字，且 (是本人頻道 或 是官方唱片公司)，我們就認定它是真 MV！
+            is_relevant = in_title and (is_artist_channel or is_label_channel)
+        else:
+            is_relevant = True
+
+        # 必須是：不髒 + 相關 + 沒重複
+        if not is_dirty and is_relevant and title not in seen_titles:
+            # 這次把 channel_title 也存起來，等一下印出來看
+            videos_data.append({'title': title, 'views': views, 'channel': channel_title})
             seen_titles.add(title)     
 
-    #總觀看數大排到小
-    #因為搜尋50筆回來後，順序可能因API權重略有變動，我們自己排最準
+    # 總觀看數大排到小
     videos_data = sorted(videos_data, key=lambda x: x['views'], reverse=True)
 
-    #只取前10名
+    if not videos_data:
+        print(f"找不到【{keyword}】符合官方來源的MV，請確認歌手名字是否正確")
+        return
+
+    # 只取前 10 名
     top_10_videos = videos_data[:10]
 
-    #印出結果
-    print("-" * 85)
-    print(f"{'排名':<4} | {'全球歷史總觀看次數':<13} | {'完整歌曲名稱'}")
-    print("-" * 85)
+    print("-" * 105)
+    print(f"{'排名':<4} | {'觀看次數':<15} | {'發布頻道':<20} | {'完整歌曲名稱'}")
+    print("-" * 105)
     for rank, video in enumerate(top_10_videos, 1):
-        print(f"第{rank:<2}名 | {video['views']:<20,} | {video['title']}")
-    print("-" * 85)  
+        #限制頻道名稱長度避免排版跑掉
+        ch_name = (video['channel'][:18] + '..') if len(video['channel']) > 18 else video['channel']
+        print(f"第{rank:<2}名 | {video['views']:<18,} | {ch_name:<20} | {video['title']}")
+    print("-" * 105)  
 
     #呼叫畫圖工具
     chart_name = f"{keyword} 全球歷史觀看排行榜"
