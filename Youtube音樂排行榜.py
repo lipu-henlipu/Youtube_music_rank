@@ -92,24 +92,24 @@ def get_global_top_by_keyword(keyword, is_artist=False):
         is_dirty = any(bad.lower() in title.lower() for bad in bad_words)
         
         if is_artist:
-            # 條件 1：影片標題「必須」包含歌手的名字
+            #影片標題「必須」包含歌手的名字
             in_title = keyword.lower() in title.lower()
             
-            # 條件 2：是歌手本人的專屬頻道嗎？
+            #是歌手本人的專屬頻道嗎？
             is_artist_channel = keyword.lower() in channel_title.lower()
             
-            # 條件 3：是官方唱片公司嗎？(建立官方認證字庫)
+            #是官方唱片公司嗎？
             official_keywords = ['vevo', 'official', '官方', '音樂', 'music', '唱片', 'records', 'entertainment', '工作室', 'studio', 'binmusic', 'rock']
             is_label_channel = any(ok in channel_title.lower() for ok in official_keywords)
             
-            # 只要標題有名字，且 (是本人頻道 或 是官方唱片公司)，我們就認定它是真 MV！
+            #只要標題有名字，且 (是本人頻道 或 是官方唱片公司)，我們就認定它是真 MV！
             is_relevant = in_title and (is_artist_channel or is_label_channel)
         else:
             is_relevant = True
 
-        # 必須是：不髒 + 相關 + 沒重複
+        #必須是：不髒 + 相關 + 沒重複
         if not is_dirty and is_relevant and title not in seen_titles:
-            # 這次把 channel_title 也存起來，等一下印出來看
+            #這次把channel_title也存起來，等一下印出來看
             videos_data.append({'title': title, 'views': views, 'channel': channel_title})
             seen_titles.add(title)     
 
@@ -142,7 +142,7 @@ def draw_chart(top_10_videos, chart_title):
     plt.rcParams['axes.unicode_minus'] = False
     warnings.filterwarnings("ignore", category=UserWarning)
 
-    # 因為歌名可能太長會把圖表擠歪，我們這裡畫圖時稍微把歌名截斷(取前15字)
+    #因為歌名可能太長會把圖表擠歪，我們這裡畫圖時稍微把歌名截斷(取前15字)
     titles = []
     views = []
     for video in top_10_videos:
